@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#
+# bash <this-scipt> - run lite all node counts, and heavy for the largest node count.
+#
+
+num_node_start=1
+num_node_end=4
+
+for var in $(eval echo "{$num_node_start..$num_node_end}")
+do
+   bash ./doem --lite --num-node "$var" --label mar01 --dry-run
+done
+
+bash ./doem --heavy --num-node $num_node_end --label mar01 --dry-run

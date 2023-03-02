@@ -1,0 +1,109 @@
+#!/bin/bash
+
+#
+# Usage: <this script> [option]
+# --heavy       : run node-sensity-heavy
+# --lite        : run node-density-lite
+# --num-node n  : n is the number of worker nodes to participate in this test
+# --label tag   : texttual component of a run log file
+# --dry-run     : skip invoking kube-burner
+#
+
+export UUID=${UUID:-$(uuidgen)}
+export ES_SERVER=https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com:443
+#export LOG_LEVEL=debug
+export CLEANUP_WHEN_FINISH=true
+export INDEXING=false
+export GEN_CSV=true
+#export PODS_PER_NODE=16
+export EMAIL_ID_FOR_RESULTS_SHEET="hnhan@redhat.com"
+
+
+heavy=false
+label=""
+dry_run=false
+
+function lite {
+    cmd="WORKLOAD=node-density ./run.sh"
+    echo $cmd
+    if [ $dry_run == false ]; then
+        eval $cmd
+    fi
+    echo results is on server $ES_SERVER with UUID $UUID index ripsaw-kube-burner
+
+}
+
+function heavy {
+    cmd="WORKLOAD=node-density-heavy ./run.sh"
+    echo $cmd
+    if [ $dry_run == false ]; then
+        eval $cmd
+    fi
+    echo results is on server $ES_SERVER with UUID $UUID index ripsaw-kube-burner
+}
+
+
+longopts="label:,heavy,lite,num-node:,dry-run,help"
+opts=$(getopt -q -o "" --longoptions "$longopts" -n "getopt.sh" -- "$@");
+if [ $? -ne 0 ]; then
+    echo "Unrecognized option specified"
+    exit
+fi
+eval set -- "$opts";
+while true; do
+    case "$1" in
+        --heavy)
+            shift;
+            heavy=true
+            ;;
+        --lite)
+            shift;
+            heavy=false
+            ;;
+        --num-node)
+            shift;
+            num_node=$1
+            echo NODE_COUNT=$num_node
+            export NODE_COUNT=$num_node
+            shift;
+            ;;
+        --label)
+            shift;
+            label=$1
+            echo label=$label
+            shift;
+            ;;
+        --dry-run)
+            shift;
+            dry_run=true
+            ;;
+        --)
+            shift;
+            break
+            ;;
+        --help)
+            shift;
+            f_help
+            exit
+            ;;
+
+        *)
+            echo "Invalid option: $1"
+            exit
+    esac
+done
+
+if [ ${heavy} == true ]; then
+    echo invoke heavy
+    heavy 2>&1 | tee heavy-$label-${NODE_COUNT}-nodes-$UUID}.log
+
+else
+    echo invoke lite
+    lite 2>&1 | tee lite-$label-${NODE_COUNT}-nodes-${UUID}.log
+
+fi
+
+
+if [ -z $label ]; then
+    echo f_help
+fi

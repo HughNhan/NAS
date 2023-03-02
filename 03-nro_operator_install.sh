@@ -20,7 +20,7 @@ mkdir -p ${MANIFEST_DIR}/
 # skip NRO if version < 4.12 or subscription already exists 
 channel=$(get_ocp_channel)
 if [ $(ver ${channel}) -ge $(ver 4.12) ] ; then
-  if ! oc get Subscription  numaresources-operator-n openshift-numaresources 2>/dev/null; then
+  if ! oc get Subscription  numaresources-operator -n openshift-numaresources 2>/dev/null; then
     echo "generating ${MANIFEST_DIR}/sub-nro.yaml ..."
     export OCP_CHANNEL=$(get_ocp_channel)
     envsubst < templates/sub-nro.yaml.template > ${MANIFEST_DIR}/sub-nro.yaml
