@@ -15,7 +15,7 @@ export ES_SERVER=https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west
 export CLEANUP_WHEN_FINISH=true
 export INDEXING=false
 export GEN_CSV=true
-#export PODS_PER_NODE=16
+export PODS_PER_NODE=84
 export EMAIL_ID_FOR_RESULTS_SHEET="hnhan@redhat.com"
 
 
@@ -24,7 +24,7 @@ label=""
 dry_run=false
 
 function lite {
-    cmd="WORKLOAD=node-density ./run.sh"
+    cmd="WORKLOAD=nas-node-density ./run.sh"
     echo $cmd
     if [ $dry_run == false ]; then
         eval $cmd
@@ -34,7 +34,7 @@ function lite {
 }
 
 function heavy {
-    cmd="WORKLOAD=node-density-heavy ./run.sh"
+    cmd="WORKLOAD=nas-node-density-heavy ./run.sh"
     echo $cmd
     if [ $dry_run == false ]; then
         eval $cmd
