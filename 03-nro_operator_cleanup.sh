@@ -7,6 +7,23 @@ source ./functions.sh
 
 parse_args $@
 
+
+
+
+
+###### Delete NRO custom resource
+if oc get numaresourcesoperators.nodetopology.openshift.io  2>/dev/null; then  0                                
+    echo "Remove NRO custom resource ..."
+    [ -e  ${MANIFEST_DIR}/nrop.yaml ] &&  oc delete -f ${MANIFEST_DIR}/nrop.yaml
+fi
+
+#### Skip NRO mcp deletion
+#### Skip NRO deletion
+
+#### old start
+
+exit
+
 echo "Removing performance profile ..."
 [ -e ${MANIFEST_DIR}/nro.yaml ] && oc delete -f ${MANIFEST_DIR}/nro.yaml
 
