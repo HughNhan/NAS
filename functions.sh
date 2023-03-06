@@ -137,7 +137,7 @@ add_label_workers () {
     done
 }
 
-remove_label_worker () {
+remove_label_workers () {
     for worker in $WORKERS; do
         oc label --overwrite node ${worker} node-role.kubernetes.io/${MCP}-
     done
