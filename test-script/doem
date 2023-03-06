@@ -5,25 +5,49 @@
 # --heavy       : run node-sensity-heavy
 # --lite        : run node-density-lite
 # --num-node n  : n is the number of worker nodes to participate in this test
+# --num-pod n   : n is the number of pod per node
 # --label tag   : texttual component of a run log file
 # --dry-run     : skip invoking kube-burner
 #
 
 export UUID=${UUID:-$(uuidgen)}
 export ES_SERVER=https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com:443
-#export LOG_LEVEL=debug
+export LOG_LEVEL=debug
 export CLEANUP_WHEN_FINISH=true
-export INDEXING=false
+export INDEXING=true
 export GEN_CSV=true
-export PODS_PER_NODE=84
 export EMAIL_ID_FOR_RESULTS_SHEET="hnhan@redhat.com"
-
 
 heavy=false
 label=""
 dry_run=false
 
+function num_workers () {
+    WORKERS=$(oc get node | grep worker | awk '{print $1}')
+    WORKER_LIST=( $WORKERS )
+    NUM_NAS_WORKERS=${#WORKER_LIST[@]}
+    echo $NUM_NAS_WORKERS
+}
+
+
+
+function iter-workers () {
+    WORKERS=$(oc get node | grep worker | awk '{print $1}')
+    for w in $WORKERS; do
+        export worker=$w
+        cmd=$(echo $1 | envsubst)
+        echo "--- $worker: $cmd"
+        eval $cmd &>/dev/null
+    done
+}
+
+num_node=$(num_workers)
+num_pod=245
+
 function lite {
+    # clear KB label left over from the last run. Else KB may use more nodes than $NODE_COUNT 
+    iter-workers 'oc label --overwrite node ${worker} nas-node-density-'
+
     cmd="WORKLOAD=nas-node-density ./run.sh"
     echo $cmd
     if [ $dry_run == false ]; then
@@ -34,6 +58,9 @@ function lite {
 }
 
 function heavy {
+    # clear KB label left over from the last run. Else KB may use more nodes than $NODE_COUNT 
+    iter-workers 'oc label --overwrite node ${worker} nas-node-density-heavy-'
+
     cmd="WORKLOAD=nas-node-density-heavy ./run.sh"
     echo $cmd
     if [ $dry_run == false ]; then
@@ -43,7 +70,18 @@ function heavy {
 }
 
 
-longopts="label:,heavy,lite,num-node:,dry-run,help"
+function f_help () {
+    me=`basename "$0"`
+    echo Usage: $me [options]
+    echo  "     --heavy            run node-density-heavy"
+    echo  "     --lite             run node-density-lite"
+    echo  "     --label <string>   used as a component of the log file name"
+    echo  "     --num-node <num>   default is all worker nodes"
+    echo  "     --num-pod  <num>   default is 254 pods per node"
+    echo  "     --dry-run          skip"
+}
+
+longopts="label:,heavy,lite,num-node:,num-pod:,dry-run,help"
 opts=$(getopt -q -o "" --longoptions "$longopts" -n "getopt.sh" -- "$@");
 if [ $? -ne 0 ]; then
     echo "Unrecognized option specified"
@@ -62,15 +100,22 @@ while true; do
             ;;
         --num-node)
             shift;
+            export NODE_COUNT=$1
+            echo NODE_COUNT=$1
             num_node=$1
-            echo NODE_COUNT=$num_node
-            export NODE_COUNT=$num_node
+            shift;
+            ;;
+        --num-pod)
+            shift;
+            export PODS_PER_NODE=$1
+            echo PODS_PER_NODE=$1
+            num_pod=$1
             shift;
             ;;
         --label)
             shift;
             label=$1
-            echo label=$label
+            #echo label=$label
             shift;
             ;;
         --dry-run)
@@ -94,12 +139,14 @@ while true; do
 done
 
 if [ ${heavy} == true ]; then
-    echo invoke heavy
-    heavy 2>&1 | tee heavy-$label-${NODE_COUNT}-nodes-$UUID}.log
+    log_file=heavy-$label-${num_node}n-${num_pod}p-$(date "+%Y-%m-%d-%T")-$UUID}.log
+    echo log_file: $log_file
+    heavy 2>&1 | tee $log_file
 
 else
-    echo invoke lite
-    lite 2>&1 | tee lite-$label-${NODE_COUNT}-nodes-${UUID}.log
+    log_file=lite-$label-${num_node}n-${num_pod}p-$(date "+%Y-%m-%d-%T")-${UUID}.log
+    echo log_file: $log_file
+    lite 2>&1 | tee $log_file
 
 fi
 
