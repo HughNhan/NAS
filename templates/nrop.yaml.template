@@ -6,5 +6,5 @@ spec:
   nodeGroups:
   - machineConfigPoolSelector:
       matchLabels:
-        pools.operator.machineconfiguration.openshift.io/worker: "" 
+        pools.operator.machineconfiguration.openshift.io/worker-nas: "" 
 

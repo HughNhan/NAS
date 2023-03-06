@@ -4,12 +4,12 @@ metadata:
   labels:
     cnf-worker-tuning: enabled
     machineconfiguration.openshift.io/mco-built-in: ""
-    pools.operator.machineconfiguration.openshift.io/worker: ""
+    pools.operator.machineconfiguration.openshift.io/worker-nas: ""
   name: worker-nas
 spec:
   machineConfigSelector:
-    matchLabels:
-      machineconfiguration.openshift.io/role: worker
+    matchExpressions: 
+      - {key: machineconfiguration.openshift.io/role, operator: In, values: [worker, worker-nas]}
   nodeSelector:
     matchLabels:
-      node-role.kubernetes.io/worker: ""
+      node-role.kubernetes.io/worker-nas: ""
