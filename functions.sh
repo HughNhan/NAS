@@ -128,6 +128,8 @@ Options:
     if [ ${WORKERS} == "none" ]; then 
         WORKERS=$(oc get node | grep worker | awk '{print $1}')
     fi
+    WORKER_LIST=( $WORKERS )
+    NUM_NAS_WORKERS=${#WORKER_LIST[@]}
 }
 
 
