@@ -9,27 +9,32 @@
 # --num-pod n   : n is the number of pod per node
 # --label tag   : texttual component of a run log file
 # --dry-run     : skip invoking kube-burner
+# --indexing    : default is true
 #
 
 export UUID=${UUID:-$(uuidgen)}
 export ES_SERVER=https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com:443
-export LOG_LEVEL=debug
+export LOG_LEVEL=${LOG_LEVEL:-debug}
 export CLEANUP_WHEN_FINISH=true
-export INDEXING=true
+export INDEXING=${INDEXING:-true}
 export GEN_CSV=true
 export EMAIL_ID_FOR_RESULTS_SHEET="hnhan@redhat.com"
 export SCHEDULER=${SCHEDULER:-default-scheduler}
+export PODS_PER_NODE=${PODS_PER_NODE:-245}
 
-heavy=false
-label=""
-dry_run=false
-
+export MAX_WAIT_TIMEOUT=10m
 function num_workers () {
     WORKERS=$(oc get node | grep worker | awk '{print $1}')
     WORKER_LIST=( $WORKERS )
     NUM_NAS_WORKERS=${#WORKER_LIST[@]}
     echo $NUM_NAS_WORKERS
 }
+
+heavy=false
+label=""
+dry_run=false
+num_node=$(num_workers)
+num_pod=245
 
 function iter-workers () {
     WORKERS=$(oc get node | grep worker | awk '{print $1}')
@@ -41,8 +46,6 @@ function iter-workers () {
     done
 }
 
-num_node=$(num_workers)
-num_pod=245
 
 function lite {
     # clear KB label left over from the last run. Else KB may use more nodes than $NODE_COUNT 
@@ -80,9 +83,10 @@ function f_help () {
     echo  "     --num-node <num>   default is all worker nodes"
     echo  "     --num-pod  <num>   default is 254 pods per node"
     echo  "     --dry-run          skip"
+    echo  "     --indexing         true/false"
 }
 
-longopts="label:,heavy,lite,nas,num-node:,num-pod:,dry-run,help"
+longopts="label:,heavy,lite,nas,num-node:,num-pod:,dry-run,indexing:,help"
 opts=$(getopt -q -o "" --longoptions "$longopts" -n "getopt.sh" -- "$@");
 if [ $? -ne 0 ]; then
     echo "Unrecognized option specified"
@@ -127,6 +131,11 @@ while true; do
             shift;
             dry_run=true
             ;;
+        --indexing)
+            shift;
+            export INDEXING=$1
+            shift;
+            ;;
         --)
             shift;
             break
@@ -142,6 +151,19 @@ while true; do
             exit
     esac
 done
+
+function dump_env () {
+    echo "######"
+    echo "heavy=$heavy"
+    echo "SCHEDULER=$SCHEDULER"
+    echo "NODE_COUNT=$NODE_COUNT"
+    echo "PODS_PER_NODE=$PODS_PER_NODE"
+    echo "INDEXING=$INDEXING"
+    echo "######"
+}
+
+dump_env
+
 
 if [ ${heavy} == true ]; then
     log_file=heavy-$label-${num_node}n-${num_pod}p-$(date "+%Y-%m-%d-%T")-$UUID}.log
