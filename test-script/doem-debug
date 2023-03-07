@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+# Usage: this [options]
+#
+#       --pod       : show all pods on all worker nodes
+#       --label     : show labels on each worker
+#
+
+WORKERS=$(oc get node | grep worker | awk '{print $1}') 
+
+function iter () {
+  for w in $WORKERS; do
+    export worker=$w
+    #echo $1
+    cmd=$(echo $1 | envsubst)
+    echo "--- $worker: $cmd"
+    eval $cmd
+  done
+}
+
+longopts="pod,label,clear-label,help"
+opts=$(getopt -q -o "" --longoptions "$longopts" -n "getopt.sh" -- "$@");
+if [ $? -ne 0 ]; then
+    echo "Unrecognized option specified"
+    exit
+fi
+eval set -- "$opts";
+while true; do
+    case "$1" in
+        --pod)
+            shift;
+             iter 'kubectl get pods --all-namespaces -o wide --field-selector spec.nodeName=$worker'
+            ;;
+        --label)
+            shift;
+           iter 'oc get node $worker --show-labels '
+            ;;
+        --clear-label)
+            shift;
+            iter 'oc label --overwrite node ${worker} nas-node-density-'
+            iter 'oc label --overwrite node ${worker} nas-node-density-heavy-'
+            ;;
+        --)
+            shift;
+            break
+            ;;
+        --help)
+            shift;
+            f_help
+            exit
+            ;;
+
+        *)
+            echo "Invalid option: $1"
+            exit
+    esac
+done
+

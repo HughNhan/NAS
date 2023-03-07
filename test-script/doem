@@ -4,6 +4,7 @@
 # Usage: <this script> [option]
 # --heavy       : run node-sensity-heavy
 # --lite        : run node-density-lite
+# --nas         : use topo-aware-scheduler. Default uses default-scheduler
 # --num-node n  : n is the number of worker nodes to participate in this test
 # --num-pod n   : n is the number of pod per node
 # --label tag   : texttual component of a run log file
@@ -17,6 +18,7 @@ export CLEANUP_WHEN_FINISH=true
 export INDEXING=true
 export GEN_CSV=true
 export EMAIL_ID_FOR_RESULTS_SHEET="hnhan@redhat.com"
+export SCHEDULER=${SCHEDULER:-default-scheduler}
 
 heavy=false
 label=""
@@ -28,8 +30,6 @@ function num_workers () {
     NUM_NAS_WORKERS=${#WORKER_LIST[@]}
     echo $NUM_NAS_WORKERS
 }
-
-
 
 function iter-workers () {
     WORKERS=$(oc get node | grep worker | awk '{print $1}')
@@ -75,13 +75,14 @@ function f_help () {
     echo Usage: $me [options]
     echo  "     --heavy            run node-density-heavy"
     echo  "     --lite             run node-density-lite"
+    echo  "     --nas              topo-aware-scheduler. default is kube-scheduler"
     echo  "     --label <string>   used as a component of the log file name"
     echo  "     --num-node <num>   default is all worker nodes"
     echo  "     --num-pod  <num>   default is 254 pods per node"
     echo  "     --dry-run          skip"
 }
 
-longopts="label:,heavy,lite,num-node:,num-pod:,dry-run,help"
+longopts="label:,heavy,lite,nas,num-node:,num-pod:,dry-run,help"
 opts=$(getopt -q -o "" --longoptions "$longopts" -n "getopt.sh" -- "$@");
 if [ $? -ne 0 ]; then
     echo "Unrecognized option specified"
@@ -97,6 +98,10 @@ while true; do
         --lite)
             shift;
             heavy=false
+            ;;
+        --nas)
+            shift;
+            export SCHEDULER=topo-aware-scheduler
             ;;
         --num-node)
             shift;
