@@ -176,7 +176,7 @@ function ext_uuid () {
         UUID=ds${num_node}n${num_pod}p-${UUID}
     fi
 
-    if [ heavy == true ]; then
+    if [ $heavy == true ]; then
         UUID=h${UUID}
     else
         UUID=l${UUID}
