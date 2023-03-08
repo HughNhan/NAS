@@ -21,8 +21,8 @@ export GEN_CSV=true
 export EMAIL_ID_FOR_RESULTS_SHEET="hnhan@redhat.com"
 export SCHEDULER=${SCHEDULER:-default-scheduler}
 export PODS_PER_NODE=${PODS_PER_NODE:-245}
-
 export MAX_WAIT_TIMEOUT=10m
+
 function num_workers () {
     WORKERS=$(oc get node | grep worker | awk '{print $1}')
     WORKER_LIST=( $WORKERS )
@@ -46,6 +46,9 @@ function iter-workers () {
     done
 }
 
+function delete_hung_pods () {
+    oc delete pods -A  -l kube-burner-job=node-density
+}
 
 function lite {
     # clear KB label left over from the last run. Else KB may use more nodes than $NODE_COUNT 
@@ -92,6 +95,7 @@ if [ $? -ne 0 ]; then
     echo "Unrecognized option specified"
     exit
 fi
+
 eval set -- "$opts";
 while true; do
     case "$1" in
@@ -162,22 +166,58 @@ function dump_env () {
     echo "######"
 }
 
-dump_env
+#
+# extend uuid to improve grafana comparison
+#
+function ext_uuid () {
+    if [  $ SCHEDULER == topo-aware-scheduler ]; then
+        UUID=ns${num_node}n${num_pod}p-${UUID}
+    else
+        UUID=ds${num_node}n${num_pod}p-${UUID}
+    fi
 
+    if [ heavy == true ]; then
+        UUID=h${UUID}
+    else
+        UUID=l${UUID}
+    fi
+}
 
 if [ ${heavy} == true ]; then
-    log_file=heavy-$label-${num_node}n-${num_pod}p-$(date "+%Y-%m-%d-%T")-$UUID}.log
+    ext_uuid
+    log_file=heavy-$label-$(date "+%Y-%m-%d-%T")-${UUID}.log
     echo log_file: $log_file
-    heavy 2>&1 | tee $log_file
+    dump_env 2>&1 | tee $log_file
+    heavy 2>&1 | tee -a $log_file
 
 else
-    log_file=lite-$label-${num_node}n-${num_pod}p-$(date "+%Y-%m-%d-%T")-${UUID}.log
+    ext_uuid
+    log_file=lite-$label-$(date "+%Y-%m-%d-%T")-${UUID}.log
     echo log_file: $log_file
-    lite 2>&1 | tee $log_file
+    dump_env 2>&1 | tee $log_file
+    lite 2>&1 | tee -a $log_file
 
 fi
 
+function dump_ns () {
+    oc get pods -ns $1
+}
+
+# if run failed, capture debug info
+if [ -e $log_file ]; then
+  if grep -q "Exiting" $log_file; then
+        echo "Normal exit"
+    else
+        echo "Error run"  | tee -a  $log_file
+        echo "########### oc get pods $uuid:" | tee -a $log_file
+        dump_ns $uuid 2>&1 | tee -a $log_file
+        echo "###########" | tee -a $log_file
+        mv $log_file $log_file-fail
+    fi
+fi
 
 if [ -z $label ]; then
     echo f_help
 fi
+
+# EOF
