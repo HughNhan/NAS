@@ -170,7 +170,7 @@ function dump_env () {
 # extend uuid to improve grafana comparison
 #
 function ext_uuid () {
-    if [  $ SCHEDULER == topo-aware-scheduler ]; then
+    if [  $SCHEDULER == topo-aware-scheduler ]; then
         UUID=ns${num_node}n${num_pod}p-${UUID}
     else
         UUID=ds${num_node}n${num_pod}p-${UUID}
