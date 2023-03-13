@@ -1,0 +1,24 @@
+#!/bin/bash
+
+#
+# bash <this-scipt> - run lite all node counts, and heavy for the largest node count.
+#
+
+label=mar13
+
+#DRY_RUN="--dry-run"
+DRY_RUN=
+num_nodes="1 14"
+num_pods=245
+
+function delete_hung_pods () {
+    oc delete pods -A  -l kube-burner-job=node-density
+}
+
+for node in $num_nodes; do
+   bash ./doem $DRY_RUN --lite --num-node $node --num-pod $num_pods --label $label --indexing true
+   bash ./doem $DRY_RUN --lite --num-node $node --num-pod $num_pods --label $label --indexing true  --nas
+done
+
+bash ./doem $DRY_RUN --heavy --num-node 14 --num-pod $num_pods --label $label --indexing true
+bash ./doem $DRY_RUN --heavy --num-node 14 --num-pod $num_pods --label $label --indexing true --nas
