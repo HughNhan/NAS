@@ -3,8 +3,10 @@ kind: NUMAResourcesOperator
 metadata:
   name: numaresourcesoperator
 spec:
+  logLevel: Normal
   nodeGroups:
-  - machineConfigPoolSelector:
+  - config:
+      infoRefreshMode: Periodic
+    machineConfigPoolSelector:
       matchLabels:
         pools.operator.machineconfiguration.openshift.io/worker-nas: "" 
-

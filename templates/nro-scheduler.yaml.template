@@ -3,4 +3,6 @@ kind: NUMAResourcesScheduler
 metadata:
   name: numaresourcesscheduler
 spec:
+  cacheResyncPeriod: 5s
   imageSpec: "registry.redhat.io/openshift4/noderesourcetopology-scheduler-container-rhel8:v4.12"
+  logLevel: Normal
