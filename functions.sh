@@ -27,7 +27,7 @@ wait_mcp () {
     while [[ $count -gt 0  ]]; do
         sleep 10
         printf "."
-        count=$((count-10))
+        count=$((count-1))
     done
 
     local status=$(get_mcp_progress_status)

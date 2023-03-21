@@ -34,11 +34,11 @@ if [ -e ${MANIFEST_DIR}/nrop.yaml ]; then
     rm ${MANIFEST_DIR}/nrop.yaml
 fi
 
-remove_label_workers
-
 if [[ "${WAIT_MCP}" == "true" ]]; then
     wait_mcp
 fi
+
+remove_label_workers
 
 exit
 

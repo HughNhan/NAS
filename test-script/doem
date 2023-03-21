@@ -21,7 +21,8 @@ export GEN_CSV=true
 export EMAIL_ID_FOR_RESULTS_SHEET="hnhan@redhat.com"
 export SCHEDULER=${SCHEDULER:-default-scheduler}
 export PODS_PER_NODE=${PODS_PER_NODE:-245}
-export MAX_WAIT_TIMEOUT=10m
+export MAX_WAIT_TIMEOUT=1h
+export POD_READY_THRESHOLD=100s
 
 function num_workers () {
     WORKERS=$(oc get node | grep worker | awk '{print $1}')
