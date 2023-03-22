@@ -1,2 +1,2 @@
 # NAS
-Misc utility for NAS
+Misc utility for NUMA Aware Scheduler testing
