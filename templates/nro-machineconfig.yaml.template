@@ -7,7 +7,7 @@ metadata:
     pools.operator.machineconfiguration.openshift.io/worker-nas: ""
   name: worker-nas
 spec:
-  maxUnavailable: ${NUM_NAS_WORKERS}
+  maxUnavailable: 100%
   machineConfigSelector:
     matchExpressions: 
       - {key: machineconfiguration.openshift.io/role, operator: In, values: [worker, worker-nas]}

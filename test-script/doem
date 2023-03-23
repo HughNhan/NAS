@@ -206,7 +206,7 @@ function dump_ns () {
 
 # if run failed, capture debug info
 if [ -e $log_file ]; then
-  if grep -q "Exiting" $log_file; then
+   if ( grep -q "Exiting" $log_file ) &&  ( grep -q 99th $log_file ) ; then
         echo "Normal exit"
     else
         echo "Error run"  | tee -a  $log_file
