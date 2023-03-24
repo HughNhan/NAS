@@ -4,21 +4,32 @@
 # bash <this-scipt> - run lite all node counts, and heavy for the largest node count.
 #
 
-label=mar13
+LABEL=mar24-ABORT-ON-ERROR
 
 #DRY_RUN="--dry-run"
 DRY_RUN=
-num_nodes="1 14"
-num_pods=245
+INDEXING=true
+ABORT_ON_ERROR=true;
+NUM_NODES="1 14"
+NUM_PODS=245
 
 function delete_hung_pods () {
     oc delete pods -A  -l kube-burner-job=node-density
 }
 
-for node in $num_nodes; do
-   bash ./doem $DRY_RUN --lite --num-node $node --num-pod $num_pods --label $label --indexing true
-   bash ./doem $DRY_RUN --lite --num-node $node --num-pod $num_pods --label $label --indexing true  --nas
+for node in $NUM_NODES; do
+   bash ./doem $DRY_RUN --lite --num-node $node --num-pod $NUM_PODS --label $LABEL --indexing $INDEXING
+   if [ $? -ne 0 ] && [ $ABORT_ON_ERROR == true ] ; then
+        exit 1;
+   fi
+   bash ./doem $DRY_RUN --lite --num-node $node --num-pod $NUM_PODS --label $LABEL --indexing $INDEXING --nas
+   if [ $? -ne 0 ] && [ $ABORT_ON_ERROR == true ] ; then
+        exit 1;
+   fi 
 done
 
-bash ./doem $DRY_RUN --heavy --num-node 14 --num-pod $num_pods --label $label --indexing true
-bash ./doem $DRY_RUN --heavy --num-node 14 --num-pod $num_pods --label $label --indexing true --nas
+bash ./doem $DRY_RUN --heavy --num-node 14 --num-pod $NUM_PODS --label $LABEL --indexing $INDEXING  --nas
+if [ $? -ne 0 ] && [ $ABORT_ON_ERROR == true ] ; then
+   exit 1;
+fi
+bash ./doem $DRY_RUN --heavy --num-node 14 --num-pod $NUM_PODS --label $LABEL --indexing $INDEXING

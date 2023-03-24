@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #
 # Usage: <this script> [option]
 # --heavy       : run node-sensity-heavy
@@ -11,11 +10,14 @@
 # --dry-run     : skip invoking kube-burner
 # --indexing    : default is true
 #
+# Exit code: 0, OK      - Clean up ns
+#          : 1, NOT_OK  - No clean up so we can investigate further
+#
 
 export UUID=${UUID:-$(uuidgen)}
 export ES_SERVER=https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com:443
 export LOG_LEVEL=${LOG_LEVEL:-debug}
-export CLEANUP_WHEN_FINISH=true
+export CLEANUP_WHEN_FINISH=false
 export INDEXING=${INDEXING:-true}
 export GEN_CSV=true
 export EMAIL_ID_FOR_RESULTS_SHEET="hnhan@redhat.com"
@@ -201,24 +203,29 @@ else
 fi
 
 function dump_ns () {
-    oc get pods -ns $1
+    oc get pods -n $1
 }
+
+if [ -z $label ]; then
+    echo f_help
+    exit 1
+fi
 
 # if run failed, capture debug info
 if [ -e $log_file ]; then
    if ( grep -q "Exiting" $log_file ) &&  ( grep -q 99th $log_file ) ; then
         echo "Normal exit"
+        oc delete ns $UUID
     else
         echo "Error run"  | tee -a  $log_file
-        echo "########### oc get pods $uuid:" | tee -a $log_file
-        dump_ns $uuid 2>&1 | tee -a $log_file
+        echo "########### oc get pods -n $UUID:" | tee -a $log_file
+        dump_ns $UUID 2>&1 | tee -a $log_file
         echo "###########" | tee -a $log_file
         mv $log_file $log_file-fail
+        exit 1
     fi
 fi
 
-if [ -z $label ]; then
-    echo f_help
-fi
+exit 0
 
 # EOF
