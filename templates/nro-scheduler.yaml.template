@@ -4,5 +4,5 @@ metadata:
   name: numaresourcesscheduler
 spec:
   cacheResyncPeriod: 5s
-  imageSpec": "quay.io/fromani/k8s-sched-plugins:v0.0.2023032702"
+  imageSpec: "quay.io/fromani/k8s-sched-plugins:v0.0.2023032702"
   logLevel: Trace
