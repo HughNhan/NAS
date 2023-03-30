@@ -10,3 +10,8 @@ spec:
     machineConfigPoolSelector:
       matchLabels:
         pools.operator.machineconfiguration.openshift.io/worker-nas: "" 
+  podExcludes:
+  - name: image-pruner-*
+    namespace: openshift-image-registry
+  - name: collect-profiles-*
+    namespace: openshift-operator-lifecycle-manager

@@ -4,5 +4,5 @@ metadata:
   name: numaresourcesscheduler
 spec:
   cacheResyncPeriod: 5s
-  imageSpec: "registry.redhat.io/openshift4/noderesourcetopology-scheduler-container-rhel8:v4.12"
-  logLevel: Normal
+  imageSpec": "quay.io/fromani/k8s-sched-plugins:v0.0.2023032702"
+  logLevel: Trace
