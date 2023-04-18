@@ -22,8 +22,8 @@ get_mcp_progress_status () {
 
 wait_mcp () {
     resume_mcp
-    printf "waiting 60 sec before checking mcp status "
-    local count=6
+    printf "waiting 100 sec before checking mcp status "
+    local count=10
     while [[ $count -gt 0  ]]; do
         sleep 10
         printf "."

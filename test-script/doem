@@ -16,7 +16,7 @@
 
 export UUID=${UUID:-$(uuidgen)}
 export ES_SERVER=https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com:443
-export LOG_LEVEL=${LOG_LEVEL:-debug}
+export LOG_LEVEL=${LOG_LEVEL:-info}
 export CLEANUP_WHEN_FINISH=false
 export INDEXING=${INDEXING:-true}
 export GEN_CSV=true
@@ -34,6 +34,8 @@ function num_workers () {
 }
 
 heavy=false
+lite=false
+cluster=false
 label=""
 dry_run=false
 num_node=$(num_workers)
@@ -68,9 +70,22 @@ function lite {
 
 function heavy {
     # clear KB label left over from the last run. Else KB may use more nodes than $NODE_COUNT 
-    iter-workers 'oc label --overwrite node ${worker} nas-node-density-heavy-'
+    iter-workers 'oc label --overwrite node ${worker} nas-node-density-'
 
     cmd="WORKLOAD=nas-node-density-heavy ./run.sh"
+    echo $cmd
+    if [ $dry_run == false ]; then
+        eval $cmd
+    fi
+    echo results is on server $ES_SERVER with UUID $UUID index ripsaw-kube-burner
+}
+
+function cluster {
+    # clear KB label left over from the last run. Else KB may use more nodes than $NODE_COUNT 
+    iter-workers 'oc label --overwrite node ${worker} cluster-density'
+
+    cmd="WORKLOAD=cluster-density ./run.sh"
+    export JOB_ITERATIONS=10
     echo $cmd
     if [ $dry_run == false ]; then
         eval $cmd
@@ -84,6 +99,7 @@ function f_help () {
     echo Usage: $me [options]
     echo  "     --heavy            run node-density-heavy"
     echo  "     --lite             run node-density-lite"
+    echo  "     --cluster          run cluster-density-lite"
     echo  "     --nas              topo-aware-scheduler. default is kube-scheduler"
     echo  "     --label <string>   used as a component of the log file name"
     echo  "     --num-node <num>   default is all worker nodes"
@@ -92,7 +108,7 @@ function f_help () {
     echo  "     --indexing         true/false"
 }
 
-longopts="label:,heavy,lite,nas,num-node:,num-pod:,dry-run,indexing:,help"
+longopts="label:,heavy,lite,cluster,nas,num-node:,num-pod:,dry-run,indexing:,help"
 opts=$(getopt -q -o "" --longoptions "$longopts" -n "getopt.sh" -- "$@");
 if [ $? -ne 0 ]; then
     echo "Unrecognized option specified"
@@ -108,7 +124,11 @@ while true; do
             ;;
         --lite)
             shift;
-            heavy=false
+            lite=true
+            ;;
+        --cluster)
+            shift;
+            cluster=true
             ;;
         --nas)
             shift;
@@ -162,6 +182,8 @@ done
 function dump_env () {
     echo "######"
     echo "heavy=$heavy"
+    echo "lite=$lite"
+    echo "cluster=$cluster"
     echo "SCHEDULER=$SCHEDULER"
     echo "NODE_COUNT=$NODE_COUNT"
     echo "PODS_PER_NODE=$PODS_PER_NODE"
@@ -181,8 +203,10 @@ function ext_uuid () {
 
     if [ $heavy == true ]; then
         UUID=h${UUID}
-    else
+    elif [ $lite == true ]; then
         UUID=l${UUID}
+    elif [ $cluster == true ]; then
+        UUID=c${UUID}
     fi
 }
 
@@ -193,13 +217,23 @@ if [ ${heavy} == true ]; then
     dump_env 2>&1 | tee $log_file
     heavy 2>&1 | tee -a $log_file
 
-else
+elif [ ${lite} == true ]; then
     ext_uuid
     log_file=lite-$label-$(date "+%Y-%m-%d-%T")-${UUID}.log
     echo log_file: $log_file
     dump_env 2>&1 | tee $log_file
     lite 2>&1 | tee -a $log_file
 
+elif [ ${cluster} == true ]; then
+    ext_uuid
+    log_file=cluster-$label-$(date "+%Y-%m-%d-%T")-${UUID}.log
+    echo log_file: $log_file
+    dump_env 2>&1 | tee $log_file
+    cluster 2>&1 | tee -a $log_file
+
+else
+    echo f_help
+    exit 1
 fi
 
 function dump_ns () {
