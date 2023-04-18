@@ -25,6 +25,7 @@ export SCHEDULER=${SCHEDULER:-default-scheduler}
 export PODS_PER_NODE=${PODS_PER_NODE:-245}
 export MAX_WAIT_TIMEOUT=1h
 export POD_READY_THRESHOLD=100s
+#export WORKER_NODE_LABEL=node-role.kubernetes.io/NAS
 
 function num_workers () {
     WORKERS=$(oc get node | grep worker | awk '{print $1}')
