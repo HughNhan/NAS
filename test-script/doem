@@ -26,6 +26,8 @@ export PODS_PER_NODE=${PODS_PER_NODE:-245}
 export MAX_WAIT_TIMEOUT=1h
 export POD_READY_THRESHOLD=100s
 #export WORKER_NODE_LABEL=node-role.kubernetes.io/NAS
+export QPS=1
+export BURST=1
 
 function num_workers () {
     WORKERS=$(oc get node | grep worker | awk '{print $1}')
@@ -36,6 +38,7 @@ function num_workers () {
 
 heavy=false
 lite=false
+lite_orig=false
 cluster=false
 label=""
 dry_run=false
@@ -61,6 +64,18 @@ function lite {
     iter-workers 'oc label --overwrite node ${worker} nas-node-density-'
 
     cmd="WORKLOAD=nas-node-density ./run.sh"
+    echo $cmd
+    if [ $dry_run == false ]; then
+        eval $cmd
+    fi
+    echo results is on server $ES_SERVER with UUID $UUID index ripsaw-kube-burner
+}
+
+function lite-orig {
+    # clear KB label left over from the last run. Else KB may use more nodes than $NODE_COUNT 
+    iter-workers 'oc label --overwrite node ${worker} node-density-'
+
+    cmd="WORKLOAD=node-density ./run.sh"
     echo $cmd
     if [ $dry_run == false ]; then
         eval $cmd
@@ -109,7 +124,7 @@ function f_help () {
     echo  "     --indexing         true/false"
 }
 
-longopts="label:,heavy,lite,cluster,nas,num-node:,num-pod:,dry-run,indexing:,help"
+longopts="label:,heavy,lite,lite-orig,cluster,nas,num-node:,num-pod:,dry-run,indexing:,help"
 opts=$(getopt -q -o "" --longoptions "$longopts" -n "getopt.sh" -- "$@");
 if [ $? -ne 0 ]; then
     echo "Unrecognized option specified"
@@ -126,6 +141,10 @@ while true; do
         --lite)
             shift;
             lite=true
+            ;;
+        --lite-orig)
+            shift;
+            lite_orig=true
             ;;
         --cluster)
             shift;
@@ -224,6 +243,13 @@ elif [ ${lite} == true ]; then
     echo log_file: $log_file
     dump_env 2>&1 | tee $log_file
     lite 2>&1 | tee -a $log_file
+
+elif [ ${lite_orig} == true ]; then
+    ext_uuid
+    log_file=lite-$label-$(date "+%Y-%m-%d-%T")-${UUID}.log
+    echo log_file: $log_file
+    dump_env 2>&1 | tee $log_file
+    lite-orig 2>&1 | tee -a $log_file
 
 elif [ ${cluster} == true ]; then
     ext_uuid
